@@ -43,6 +43,8 @@ def fetch_data():
 
 def process_data(zip_content):
     tempFolder = '/tmp'
+    csvTime = None
+    
     if not os.path.exists(tempFolder):
         os.makedirs(tempFolder)
 
@@ -52,9 +54,9 @@ def process_data(zip_content):
             if file.endswith(".csv"):
                 csvpath = os.path.join(tempFolder, file)
                 cTime = os.path.getctime(csvpath)
-                cTimeFormatted = datetime.datetime.fromtimestamp(cTime)
+                csvTime = datetime.datetime.fromtimestamp(cTime).strftime("%Y-%m-%d")
 
-                print("CSV Creation Date: ", cTimeFormatted)
+                print("CSV Creation Date: ", csvTime)
                 break
 
     if not csvpath:
@@ -63,17 +65,21 @@ def process_data(zip_content):
     # Load only necessary columns
     columns = ['PROVINCIA', 'COMUNE', 'LATITUDINE', 'LONGITUDINE', 'CENTRALE_TX_DI_RIF', 'ID_ELEMENTO',
                'TIPO', 'TIPOLOGIA_CRO', 'STATO', 'INDIRIZZO', 'DATA_PUBBLICAZIONE']
-    list_cantieri = pd.read_csv(csvpath, delimiter=';', usecols=columns).dropna()
-    list_cantieri = list_cantieri.sort_values(by=['PROVINCIA', 'COMUNE', 'INDIRIZZO'])
-
-    return list_cantieri.to_dict(orient='records')
+    
+    try:
+        list_cantieri = pd.read_csv(csvpath, delimiter=';', usecols=columns).dropna()
+        list_cantieri = list_cantieri.sort_values(by=['PROVINCIA', 'COMUNE', 'INDIRIZZO'])
+    except:
+        raise Exception("Error parsing CSV!")
+    
+    return csvTime, list_cantieri.to_dict(orient='records')
 
 if __name__ == "__main__":
     zip_content = fetch_data()
     
     if zip_content is not None:
-        data = process_data(zip_content)
+        creation_time, data = process_data(zip_content)
         # Save data to a JSON file
         with open('data.json', 'w') as f:
             import json
-            json.dump({"data": data}, f)
+            json.dump({"creation_time": creation_time, "data": data}, f)
