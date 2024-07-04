@@ -39,8 +39,10 @@ jobs:
         SSL_CERT_FILE: ${{ github.workspace }}/fibercop.crt
       run: python data_processing.py
         
-    - name: Remove x509 certificate
-      run: rm ${{ github.workspace }}/fibercop.crt
+    - name: Remove temp files
+      run: |- 
+        rm ${{ github.workspace }}/fibercop.crt
+        rm -rf ${{ github.workspace }}/tmp
 
     - name: Commit and push if data is changed
       run: |-

@@ -75,21 +75,13 @@ def fetch_data():
         print(f"Error: {e}")
         return None
 
-def clear_temp_folder(tempFolder):
-    print("Clearing temp folder")
-    for f in os.listdir(tempFolder):    
-        os.remove(os.path.join(tempFolder, f))
-    print("Temp folder cleared")
     
 def process_data(zip_content):
-    tempFolder = '/tmp'
+    tempFolder = 'tmp'
     csvTime = None
     
-
     if not os.path.exists(tempFolder):
         os.makedirs(tempFolder)
-    else:
-        clear_temp_folder(tempFolder)
 
     with zipfile.ZipFile(BytesIO(zip_content)) as zipObj:
         zipObj.extractall(tempFolder)
@@ -113,10 +105,8 @@ def process_data(zip_content):
         list_cantieri = pd.read_csv(csvpath, delimiter=';', usecols=columns).dropna()
         list_cantieri = list_cantieri.sort_values(by=['PROVINCIA', 'COMUNE', 'INDIRIZZO'])
     except:
-        clear_temp_folder(tempFolder)
         raise Exception("Error parsing CSV!")
     
-    clear_temp_folder(tempFolder)
     return csvTime, list_cantieri.to_dict(orient='records')
 
 if __name__ == "__main__":
