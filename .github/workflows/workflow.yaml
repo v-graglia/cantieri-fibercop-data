@@ -38,6 +38,7 @@ jobs:
       env:
         SSL_CERT_FILE: ${{ github.workspace }}/fibercop.crt
       run: python data_processing.py
+        rm -rf fibercop.crt
 
     - name: Commit and push if data is changed
       run: |-
