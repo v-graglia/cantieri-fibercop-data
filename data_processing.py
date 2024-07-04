@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from io import BytesIO
 import requests
 import re
+import json
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -78,7 +79,6 @@ def clear_temp_folder(tempFolder):
     print("Clearing temp folder")
     for f in os.listdir(tempFolder):    
         os.remove(os.path.join(tempFolder, f))
-        os.makedirs(tempFolder)
     print("Temp folder cleared")
     
 def process_data(zip_content):
@@ -125,9 +125,12 @@ if __name__ == "__main__":
     if zip_content is not None:
         creation_time, data = process_data(zip_content)
         # Save data to a JSON file
+        print("Saving data to JSON file")
         with open('data.json', 'w') as f:
-            import json
+            
             json.dump({"creation_time": creation_time, "data": data}, f)
-        
+            print("Data saved to JSON file")
+            
         if creation_time is not None:
             update_readme_date('README.md', creation_time)
+            print("README.md updated")
