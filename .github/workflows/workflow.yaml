@@ -1,0 +1,35 @@
+name: Data Processing Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install OpenSSL
+      run: sudo apt-get install openssl
+
+    - name: Get x509 certificate
+      run: |
+        echo | openssl s_client -servername www.fibercop.it -connect www.fibercop.it:443 2>/dev/null | openssl x509 > fibercop.crt
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run data processing script
+      env:
+        SSL_CERT_FILE: ${{ github.workspace }}/fibercop.crt
+      run: python data_processing.py
