@@ -3,3 +3,4 @@ pandas==1.4.3
 Requests==2.32.3
 urllib3==1.26.11
 numpy==1.26.1
+regex==2024.5.15

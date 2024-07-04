@@ -1,11 +1,11 @@
 import urllib3
 import zipfile
 import os
-import datetime
 import pandas as pd
 from bs4 import BeautifulSoup
 from io import BytesIO
 import requests
+import re
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -15,6 +15,39 @@ stringHtml = 'Elenco CRO/CNO attivi'
 headers = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
 }
+
+def update_readme_date(filepath, new_date):
+    with open(filepath, 'r') as file:
+        content = file.read()
+    
+    # Regular expression to find the date in the format YYYY-MM-DD
+    old_date_pattern = r'Dati aggiornati al: `\d{4}-\d{2}-\d{2}`'
+    
+    # Replacement string with the new date
+    new_date_string = f'Dati aggiornati al: `{new_date}`'
+    
+    # Replace the old date with the new date
+    updated_content = re.sub(old_date_pattern, new_date_string, content)
+    
+    if updated_content != content:
+        # Write the updated content back to the file
+        with open(filepath, 'w') as file:
+            file.write(updated_content)
+        
+
+def extract_filename_date(filename):
+    pattern = r'(\d{4})(\d{2})(\d{2})'
+    
+    match = re.search(pattern, filename)
+    
+    if match:
+        year, month, day = match.groups()
+        
+        # Format the date as YYYY-MM-DD
+        extracted_date = f'{year}-{month}-{day}'
+        return extracted_date
+    else:
+        return None
 
 def fetch_data():
     try:
@@ -41,20 +74,30 @@ def fetch_data():
         print(f"Error: {e}")
         return None
 
+def clear_temp_folder(tempFolder):
+    print("Clearing temp folder")
+    for f in os.listdir(tempFolder):    
+        os.remove(os.path.join(tempFolder, f))
+        os.makedirs(tempFolder)
+    print("Temp folder cleared")
+    
 def process_data(zip_content):
     tempFolder = '/tmp'
     csvTime = None
     
+
     if not os.path.exists(tempFolder):
         os.makedirs(tempFolder)
+    else:
+        clear_temp_folder(tempFolder)
 
     with zipfile.ZipFile(BytesIO(zip_content)) as zipObj:
         zipObj.extractall(tempFolder)
         for file in os.listdir(tempFolder):
             if file.endswith(".csv"):
+                
                 csvpath = os.path.join(tempFolder, file)
-                cTime = os.path.getctime(csvpath)
-                csvTime = datetime.datetime.fromtimestamp(cTime).strftime("%Y-%m-%d")
+                csvTime = extract_filename_date(csvpath)
 
                 print("CSV Creation Date: ", csvTime)
                 break
@@ -70,8 +113,10 @@ def process_data(zip_content):
         list_cantieri = pd.read_csv(csvpath, delimiter=';', usecols=columns).dropna()
         list_cantieri = list_cantieri.sort_values(by=['PROVINCIA', 'COMUNE', 'INDIRIZZO'])
     except:
+        clear_temp_folder(tempFolder)
         raise Exception("Error parsing CSV!")
     
+    clear_temp_folder(tempFolder)
     return csvTime, list_cantieri.to_dict(orient='records')
 
 if __name__ == "__main__":
@@ -83,3 +128,6 @@ if __name__ == "__main__":
         with open('data.json', 'w') as f:
             import json
             json.dump({"creation_time": creation_time, "data": data}, f)
+        
+        if creation_time is not None:
+            update_readme_date('README.md', creation_time)
